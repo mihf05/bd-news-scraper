@@ -489,7 +489,9 @@ def collect_files() -> list[dict]:
     for path, description in wanted:
         if not path.exists():
             continue
-        content = path.read_text(encoding="utf-8")
+        # Decode the bytes rather than read_text so CRLF line endings survive and
+        # the download is byte-identical to the file in the repository.
+        content = path.read_bytes().decode("utf-8")
         is_json = path.suffix == ".json"
         files.append({
             "name": path.name,

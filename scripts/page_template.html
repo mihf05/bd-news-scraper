@@ -645,6 +645,7 @@
     .filter(function (year) { return !isNaN(year); }));
 
   var state = { domain: null, access: "all", query: "", view: "cards" };
+  var downloads = null;
 
   function accessClass(row) {
     if (row.fetchable) return "auto";
@@ -870,6 +871,22 @@
       var link = el("a", "btn", "Download");
       link.href = URL.createObjectURL(new Blob([file.content], { type: file.mime }));
       link.download = file.name;
+      link.addEventListener("click", function (event) {
+        // A plain download link is inert inside the artifact viewer, which hands
+        // files over through the downloads capability instead. Use it when the
+        // host offers it; anywhere else the link saves the file by itself.
+        if (!downloads) return;
+        event.preventDefault();
+        var original = link.textContent;
+        link.textContent = "Saving…";
+        downloads.save({ filename: file.name, data: file.content }).then(function () {
+          link.textContent = "Saved";
+          setTimeout(function () { link.textContent = original; }, 1600);
+        }, function (error) {
+          link.textContent = error && error.code === "declined" ? original : "Use Copy";
+          setTimeout(function () { link.textContent = original; }, 2400);
+        });
+      });
       actions.appendChild(link);
 
       var copy = el("button", "btn ghost", "Copy");
@@ -944,6 +961,14 @@
     renderFiles();
     wireSegments();
     render();
+
+    if (window.claude && typeof window.claude.use === "function") {
+      window.claude.use("downloads").then(function (namespace) {
+        downloads = namespace;
+      }, function () {
+        downloads = null;
+      });
+    }
   }
 
   init();
