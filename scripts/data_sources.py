@@ -6,6 +6,7 @@ JSON (``export``) and the openly downloadable entries can be fetched to disk
 
 Usage:
     python scripts/data_sources.py export
+    python scripts/data_sources.py page
     python scripts/data_sources.py fetch [--idea dengue] [--dry-run]
 """
 
@@ -19,6 +20,9 @@ from pathlib import Path
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 SOURCES_DIR = DATA_DIR / "sources"
 RAW_DIR = DATA_DIR / "raw"
+REFERENCE_DIR = DATA_DIR / "reference"
+TEMPLATE_PATH = Path(__file__).resolve().parent / "page_template.html"
+PAGE_PATH = DATA_DIR / "index.html"
 
 REQUEST_TIMEOUT = 60
 USER_AGENT = "bd-news-scraper-datasources/1.0"
@@ -439,6 +443,117 @@ def export_catalog(output_dir: Path = SOURCES_DIR) -> tuple[Path, Path]:
     return csv_path, json_path
 
 
+DOWNLOAD_NOTE = (
+    "Download saves the file straight from this page - no request goes anywhere. "
+    "If a preview host blocks the save, Copy puts the same text on your clipboard."
+)
+
+FOOTER_NOTE = (
+    "Generated from scripts/data_sources.py. Licenses and URLs are recorded as published "
+    "by each provider - confirm them on the landing page the first time you download. "
+    "No datasets are embedded here; run the fetcher to populate data/raw/."
+)
+
+
+def count_rows(text: str, is_json: bool) -> int:
+    """Count the records in a serialised file.
+
+    Args:
+        text: File contents.
+        is_json: Whether the contents are JSON.
+
+    Returns:
+        int: Number of records.
+    """
+    if is_json:
+        return len(json.loads(text))
+    return max(0, len([line for line in text.splitlines() if line.strip()]) - 1)
+
+
+def collect_files() -> list[dict]:
+    """Read the generated data files so the page can serve them for download.
+
+    Returns:
+        list[dict]: One entry per downloadable file.
+    """
+    wanted = [
+        (SOURCES_DIR / "datasets.csv", "The full catalog, one row per dataset."),
+        (SOURCES_DIR / "datasets.json", "The same catalog as JSON records."),
+        (REFERENCE_DIR / "bd_road_death_estimates.csv",
+         "WHO estimate against official Bangladesh road deaths, 2021."),
+        (REFERENCE_DIR / "bd_road_death_estimates.json",
+         "The same reference figures as JSON records."),
+    ]
+
+    files = []
+    for path, description in wanted:
+        if not path.exists():
+            continue
+        content = path.read_text(encoding="utf-8")
+        is_json = path.suffix == ".json"
+        files.append({
+            "name": path.name,
+            "description": description,
+            "content": content,
+            "mime": "application/json" if is_json else "text/csv",
+            "rows": count_rows(content, is_json),
+        })
+    return files
+
+
+def build_page(artifact_path: Path | None = None) -> Path:
+    """Render the catalog browser page from the template.
+
+    Writes a standalone page to ``data/index.html``. When ``artifact_path`` is
+    given, the same page is also written without the document skeleton, which is
+    the form the Artifact publisher expects.
+
+    Args:
+        artifact_path: Optional path for the skeleton-free copy.
+
+    Returns:
+        Path: Path of the standalone page.
+
+    Raises:
+        ValueError: If the template is missing its body or data markers.
+    """
+    template = TEMPLATE_PATH.read_text(encoding="utf-8")
+    if "<!--BODY-->" not in template or "/*__DATA__*/" not in template:
+        raise ValueError("page_template.html is missing its BODY or DATA marker")
+
+    reference_path = REFERENCE_DIR / "bd_road_death_estimates.json"
+    reference = json.loads(reference_path.read_text(encoding="utf-8")) if reference_path.exists() else []
+
+    payload = {
+        "columns": COLUMN_NAMES,
+        "catalog": [asdict(source) for source in CATALOG],
+        "reference": reference,
+        "files": collect_files(),
+        "download_note": DOWNLOAD_NOTE,
+        "footer_note": FOOTER_NOTE,
+    }
+    serialised = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
+    template = template.replace("/*__DATA__*/", f"var DATA = {serialised};")
+
+    head, body = template.split("<!--BODY-->", 1)
+    head, body = head.strip(), body.strip()
+
+    PAGE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    PAGE_PATH.write_text(
+        "<!doctype html>\n<html lang=\"en\">\n<head>\n"
+        "<meta charset=\"utf-8\">\n"
+        "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
+        f"{head}\n</head>\n<body>\n{body}\n</body>\n</html>\n",
+        encoding="utf-8",
+    )
+
+    if artifact_path is not None:
+        artifact_path.parent.mkdir(parents=True, exist_ok=True)
+        artifact_path.write_text(f"{head}\n{body}\n", encoding="utf-8")
+
+    return PAGE_PATH
+
+
 def build_headers(source: DataSource) -> dict[str, str]:
     """Build request headers, injecting API keys from the environment.
 
@@ -564,6 +679,10 @@ def main() -> None:
 
     subparsers.add_parser("export", help="Write the catalog to CSV and JSON")
 
+    page_parser = subparsers.add_parser("page", help="Render the catalog browser page")
+    page_parser.add_argument("--artifact", type=Path,
+                             help="Also write a copy without the document skeleton")
+
     fetch_parser = subparsers.add_parser("fetch", help="Download the open sources")
     fetch_parser.add_argument("--idea", choices=sorted({s.idea for s in CATALOG}))
     fetch_parser.add_argument("--dry-run", action="store_true")
@@ -574,6 +693,11 @@ def main() -> None:
         csv_path, json_path = export_catalog()
         print(f"wrote {csv_path}")
         print(f"wrote {json_path}")
+    elif args.command == "page":
+        page_path = build_page(artifact_path=args.artifact)
+        print(f"wrote {page_path}")
+        if args.artifact:
+            print(f"wrote {args.artifact}")
     else:
         fetch_catalog(idea=args.idea, dry_run=args.dry_run)
 

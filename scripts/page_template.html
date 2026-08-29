@@ -1,0 +1,950 @@
+<title>Early-Warning Data Catalog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap">
+<style>
+  :root {
+    --paper: #f2f5f2;
+    --surface: #ffffff;
+    --surface-2: #e8eeeb;
+    --ink: #101a17;
+    --ink-2: #3d4d48;
+    --muted: #6b7d77;
+    --line: #d3dcd8;
+    --line-strong: #b6c4bf;
+    --accent: #12655a;
+    --accent-soft: #dbece7;
+    --accent-ink: #ffffff;
+    --dengue: #b0433a;
+    --flood: #2a6d9c;
+    --road: #96661c;
+    --air: #665aa0;
+    --shadow: 0 1px 2px rgba(16, 26, 23, .05), 0 10px 26px -16px rgba(16, 26, 23, .28);
+    --radius: 6px;
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0c1412;
+      --surface: #141f1c;
+      --surface-2: #1c2926;
+      --ink: #e7ece9;
+      --ink-2: #b4c2bd;
+      --muted: #859791;
+      --line: #26332f;
+      --line-strong: #37473f;
+      --accent: #5cc7b1;
+      --accent-soft: #10332d;
+      --accent-ink: #06201b;
+      --dengue: #e0776c;
+      --flood: #74acd9;
+      --road: #d2a35a;
+      --air: #a89bdc;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 26px -16px rgba(0, 0, 0, .7);
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #0c1412;
+    --surface: #141f1c;
+    --surface-2: #1c2926;
+    --ink: #e7ece9;
+    --ink-2: #b4c2bd;
+    --muted: #859791;
+    --line: #26332f;
+    --line-strong: #37473f;
+    --accent: #5cc7b1;
+    --accent-soft: #10332d;
+    --accent-ink: #06201b;
+    --dengue: #e0776c;
+    --flood: #74acd9;
+    --road: #d2a35a;
+    --air: #a89bdc;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 26px -16px rgba(0, 0, 0, .7);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  [hidden] { display: none !important; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: Archivo, "Helvetica Neue", Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 24px 72px;
+  }
+
+  a { color: var(--accent); }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ---------------------------------------------------------------- header */
+  header.masthead {
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+  }
+
+  .masthead-inner {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 34px 24px 28px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 28px;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+
+  h1 {
+    font-size: clamp(28px, 4.2vw, 40px);
+    font-weight: 700;
+    letter-spacing: -.02em;
+    line-height: 1.08;
+    margin: 8px 0 0;
+    text-wrap: balance;
+  }
+
+  .standfirst {
+    font-family: Newsreader, Georgia, serif;
+    font-size: 17px;
+    line-height: 1.55;
+    color: var(--ink-2);
+    max-width: 60ch;
+    margin: 12px 0 0;
+  }
+
+  .masthead-meta {
+    display: flex;
+    gap: 26px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .masthead-meta b {
+    display: block;
+    font-family: Archivo, sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ------------------------------------------------------------ domain row */
+  .domains {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin: 28px 0 0;
+  }
+
+  .domain {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-top: 3px solid var(--hue);
+    border-radius: var(--radius);
+    padding: 14px 16px 16px;
+    box-shadow: var(--shadow);
+    text-align: left;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    transition: border-color .12s ease, transform .12s ease;
+  }
+
+  .domain:hover { border-color: var(--line-strong); border-top-color: var(--hue); }
+  .domain[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--hue); }
+
+  .domain-name {
+    font-weight: 600;
+    font-size: 15px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .domain-count {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 13px;
+    color: var(--hue);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .domain-note {
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .meter {
+    margin-top: 10px;
+    height: 4px;
+    border-radius: 99px;
+    background: var(--surface-2);
+    overflow: hidden;
+  }
+
+  .meter span {
+    display: block;
+    height: 100%;
+    background: var(--hue);
+  }
+
+  /* ----------------------------------------------------------------- tools */
+  .catalog { margin-top: 0; }
+
+  .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    padding: 14px 0;
+    margin-top: 30px;
+    background: color-mix(in srgb, var(--paper) 92%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .search {
+    flex: 1 1 240px;
+    min-width: 200px;
+    padding: 9px 12px;
+    font: inherit;
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+  }
+
+  .search::placeholder { color: var(--muted); }
+
+  .seg {
+    display: flex;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--surface);
+  }
+
+  .seg button {
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 13px;
+    border: 0;
+    background: transparent;
+    color: var(--ink-2);
+    cursor: pointer;
+    border-right: 1px solid var(--line);
+  }
+
+  .seg button:last-child { border-right: 0; }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+
+  .count-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    justify-content: space-between;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px;
+    color: var(--muted);
+    padding: 14px 2px 0;
+  }
+
+  /* ----------------------------------------------------------------- cards */
+  .cards { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--hue);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .card > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 15px 18px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px 18px;
+    align-items: start;
+  }
+
+  .card > summary::-webkit-details-marker { display: none; }
+  .card[open] > summary { border-bottom: 1px solid var(--line); }
+
+  .card-title { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+  .card-provider { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+  .card-type {
+    font-family: Newsreader, Georgia, serif;
+    font-size: 14.5px;
+    color: var(--ink-2);
+    margin-top: 6px;
+    max-width: 62ch;
+  }
+
+  .badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+
+  .badge {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: .02em;
+    padding: 3px 7px;
+    border-radius: 3px;
+    background: var(--surface-2);
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+
+  .badge.auto { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+  .badge.key { background: var(--surface-2); color: var(--road); }
+  .badge.manual { background: var(--surface-2); color: var(--muted); }
+
+  .span-col { justify-self: end; width: 180px; max-width: 42vw; }
+
+  .span-label {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .span-track {
+    margin-top: 5px;
+    height: 6px;
+    background: var(--surface-2);
+    border-radius: 99px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .span-fill {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: var(--hue);
+    border-radius: 99px;
+    opacity: .85;
+  }
+
+  .card-body { padding: 4px 18px 18px; }
+
+  dl.fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 14px 24px;
+    margin: 14px 0 0;
+  }
+
+  dl.fields dt {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  dl.fields dd { margin: 3px 0 0; font-size: 14px; overflow-wrap: anywhere; }
+
+  .note {
+    font-family: Newsreader, Georgia, serif;
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--ink-2);
+    margin: 16px 0 0;
+    padding-left: 13px;
+    border-left: 2px solid var(--line-strong);
+    max-width: 68ch;
+  }
+
+  /* ----------------------------------------------------------------- table */
+  .table-scroll {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    margin-top: 12px;
+  }
+
+  table { border-collapse: collapse; width: max-content; min-width: 100%; font-size: 13px; }
+
+  th, td {
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+    max-width: 320px;
+  }
+
+  th {
+    position: sticky;
+    top: 0;
+    background: var(--surface-2);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    white-space: nowrap;
+    z-index: 1;
+  }
+
+  tbody tr:hover { background: var(--surface-2); }
+  td.mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+  /* ------------------------------------------------------------- sections */
+  section { margin-top: 52px; scroll-margin-top: 80px; }
+
+  h2 {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -.01em;
+    margin: 8px 0 0;
+  }
+
+  .section-intro {
+    font-family: Newsreader, Georgia, serif;
+    font-size: 15.5px;
+    color: var(--ink-2);
+    max-width: 66ch;
+    margin: 8px 0 0;
+  }
+
+  .gap-figure {
+    display: grid;
+    gap: 14px;
+    margin-top: 20px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+  }
+
+  .gap-row { display: grid; grid-template-columns: 190px 1fr; gap: 14px; align-items: center; }
+
+  .gap-name { font-size: 13.5px; font-weight: 600; }
+  .gap-name small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
+
+  .gap-bar { display: flex; align-items: center; gap: 10px; }
+
+  .gap-fill {
+    height: 22px;
+    border-radius: 3px;
+    background: var(--hue);
+    min-width: 2px;
+  }
+
+  .gap-value {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-2);
+  }
+
+  /* ------------------------------------------------------------- downloads */
+  .files {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .file {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .file-name {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 13px;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+  }
+
+  .file-meta { font-size: 12.5px; color: var(--muted); }
+  .file-actions { display: flex; gap: 8px; margin-top: auto; padding-top: 12px; }
+
+  .btn {
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 7px 13px;
+    border-radius: var(--radius);
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: var(--accent-ink);
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+  }
+
+  .btn.ghost { background: transparent; color: var(--accent); }
+  .btn:hover { filter: brightness(1.06); }
+
+  .fineprint {
+    font-family: Newsreader, Georgia, serif;
+    font-size: 14.5px;
+    line-height: 1.6;
+    color: var(--ink-2);
+    max-width: 68ch;
+    margin-top: 16px;
+  }
+
+  footer {
+    margin-top: 56px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+
+  .empty {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--muted);
+    font-family: Newsreader, Georgia, serif;
+    font-size: 16px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+  @media (max-width: 620px) {
+    .card > summary { grid-template-columns: 1fr; }
+    .span-col { justify-self: start; width: 100%; max-width: none; }
+    .span-label { text-align: left; }
+    .gap-row { grid-template-columns: 1fr; }
+  }
+</style>
+<!--BODY-->
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <p class="eyebrow">Bangladesh &middot; life-saving app research</p>
+      <h1>Early-Warning Data Catalog</h1>
+      <p class="standfirst">Every dataset that could feed a dengue, flood, road-safety or air-quality
+        warning app &mdash; what it covers, how you get it, and what it costs you to get it.</p>
+    </div>
+    <div class="masthead-meta">
+      <div>sources<b id="stat-total">0</b></div>
+      <div>auto-fetch<b id="stat-auto">0</b></div>
+      <div>earliest<b id="stat-earliest">&mdash;</b></div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="domains" id="domains"></div>
+
+  <div class="catalog">
+  <div class="toolbar">
+    <input class="search" id="search" type="search" placeholder="Search name, provider, coverage, notes&hellip;" aria-label="Search datasets">
+    <div class="seg" role="group" aria-label="Filter by access">
+      <button type="button" data-access="all" aria-pressed="true">All access</button>
+      <button type="button" data-access="auto" aria-pressed="false">Auto-fetch</button>
+      <button type="button" data-access="key" aria-pressed="false">Needs key</button>
+      <button type="button" data-access="manual" aria-pressed="false">Manual step</button>
+    </div>
+    <div class="seg" role="group" aria-label="View mode">
+      <button type="button" data-view="cards" aria-pressed="true">Cards</button>
+      <button type="button" data-view="table" aria-pressed="false">Full table</button>
+    </div>
+  </div>
+
+  <p class="count-line"><span id="count-line"></span><span id="span-legend"></span></p>
+
+  <div class="cards" id="cards"></div>
+  <div class="table-scroll" id="table-wrap" hidden>
+    <table id="table">
+      <thead><tr id="thead-row"></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+  </div>
+
+  <section id="gap">
+    <p class="eyebrow">Why every idea needs two sources</p>
+    <h2>The reporting gap</h2>
+    <p class="section-intro">Official national figures undercount. For road deaths in 2021 the WHO
+      estimate and the government's own reported total differ by close to three times &mdash; so each
+      idea in the catalog pairs a national source with an independent or international one, and the
+      model gets calibrated against the discrepancy instead of inheriting it.</p>
+    <div class="gap-figure" id="gap-figure"></div>
+  </section>
+
+  <section id="downloads">
+    <p class="eyebrow">Take it with you</p>
+    <h2>Download the data</h2>
+    <p class="section-intro">The same bytes that sit in the repository, generated from one catalog
+      definition so the CSV, the JSON and this page can't drift apart.</p>
+    <div class="files" id="files"></div>
+    <p class="fineprint" id="download-note"></p>
+  </section>
+
+  <footer>
+    <p id="footer-note"></p>
+  </footer>
+</div>
+
+<script>
+  /*__DATA__*/
+
+  var DOMAINS = [
+    { id: "dengue", label: "Dengue", hue: "var(--dengue)", note: "Outbreak hotspots by area" },
+    { id: "flood", label: "Flood", hue: "var(--flood)", note: "River levels, 7-day forecasts" },
+    { id: "road_safety", label: "Road safety", hue: "var(--road)", note: "Accident black spots" },
+    { id: "air_quality", label: "Air quality", hue: "var(--air)", note: "Pollution spikes by group" }
+  ];
+
+  var TIMELINE_END = new Date().getFullYear();
+  var TIMELINE_START = Math.min.apply(null, DATA.catalog
+    .map(function (row) { return parseInt(row.coverage_start, 10); })
+    .filter(function (year) { return !isNaN(year); }));
+
+  var state = { domain: null, access: "all", query: "", view: "cards" };
+
+  function accessClass(row) {
+    if (row.fetchable) return "auto";
+    if (String(row.auth_required).indexOf("yes") === 0) return "key";
+    return "manual";
+  }
+
+  function accessLabel(row) {
+    return { auto: "auto-fetch", key: "needs key", manual: "manual step" }[accessClass(row)];
+  }
+
+  function hueFor(idea) {
+    var d = DOMAINS.filter(function (x) { return x.id === idea; })[0];
+    return d ? d.hue : "var(--accent)";
+  }
+
+  function coverageText(row) {
+    if (!row.coverage_start && !row.coverage_end) return "coverage not stated";
+    if (!row.coverage_start) return "to " + row.coverage_end;
+    return row.coverage_start + " – " + row.coverage_end;
+  }
+
+  function spanGeometry(row) {
+    var start = parseInt(row.coverage_start, 10);
+    var end = row.coverage_end === "ongoing" ? TIMELINE_END : parseInt(row.coverage_end, 10);
+    if (isNaN(start) && isNaN(end)) return null;
+    if (isNaN(start)) start = TIMELINE_END - 2;
+    if (isNaN(end)) end = TIMELINE_END;
+    var total = TIMELINE_END - TIMELINE_START;
+    var left = Math.max(0, (start - TIMELINE_START) / total) * 100;
+    var right = Math.min(100, (end - TIMELINE_START) / total * 100);
+    return { left: left, width: Math.max(1.5, right - left) };
+  }
+
+  function el(tag, className, text) {
+    var node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function field(label, valueNode) {
+    var pair = el("div", "field");
+    pair.appendChild(el("dt", null, label));
+    pair.appendChild(valueNode);
+    return pair;
+  }
+
+  function matches(row) {
+    if (state.domain && row.idea !== state.domain) return false;
+    if (state.access !== "all" && accessClass(row) !== state.access) return false;
+    if (!state.query) return true;
+    var haystack = [row.dataset_name, row.provider, row.data_type, row.geography, row.notes,
+      row.formats, row.access, row.license, row.dataset_id, coverageText(row)].join(" ").toLowerCase();
+    return haystack.indexOf(state.query) !== -1;
+  }
+
+  function renderDomains() {
+    var host = document.getElementById("domains");
+    host.textContent = "";
+    DOMAINS.forEach(function (domain) {
+      var rows = DATA.catalog.filter(function (r) { return r.idea === domain.id; });
+      var auto = rows.filter(function (r) { return r.fetchable; }).length;
+      var button = el("button", "domain");
+      button.type = "button";
+      button.style.setProperty("--hue", domain.hue);
+      button.setAttribute("aria-pressed", String(state.domain === domain.id));
+
+      var name = el("div", "domain-name");
+      name.appendChild(el("span", null, domain.label));
+      name.appendChild(el("span", "domain-count", rows.length + " src"));
+      button.appendChild(name);
+      button.appendChild(el("div", "domain-note", domain.note));
+
+      var meter = el("div", "meter");
+      var fill = el("span");
+      fill.style.width = (rows.length ? (auto / rows.length) * 100 : 0) + "%";
+      meter.appendChild(fill);
+      button.appendChild(meter);
+      button.appendChild(el("div", "domain-note",
+        auto ? auto + " of " + rows.length + " fetch unattended" : "all need a manual step first"));
+
+      button.addEventListener("click", function () {
+        state.domain = state.domain === domain.id ? null : domain.id;
+        render();
+      });
+      host.appendChild(button);
+    });
+  }
+
+  function buildCard(row) {
+    var card = el("details", "card");
+    card.style.setProperty("--hue", hueFor(row.idea));
+
+    var summary = document.createElement("summary");
+    var left = el("div");
+    left.appendChild(el("div", "card-title", row.dataset_name));
+    left.appendChild(el("div", "card-provider", row.provider));
+    left.appendChild(el("div", "card-type", row.data_type));
+
+    var badges = el("div", "badges");
+    badges.appendChild(el("span", "badge " + accessClass(row), accessLabel(row)));
+    badges.appendChild(el("span", "badge", row.formats));
+    badges.appendChild(el("span", "badge", row.update_frequency));
+    left.appendChild(badges);
+    summary.appendChild(left);
+
+    var spanCol = el("div", "span-col");
+    spanCol.appendChild(el("div", "span-label", coverageText(row)));
+    var geometry = spanGeometry(row);
+    if (geometry) {
+      var track = el("div", "span-track");
+      var fill = el("div", "span-fill");
+      fill.style.left = geometry.left + "%";
+      fill.style.width = geometry.width + "%";
+      track.appendChild(fill);
+      spanCol.appendChild(track);
+    }
+    summary.appendChild(spanCol);
+    card.appendChild(summary);
+
+    var body = el("div", "card-body");
+    var list = el("dl", "fields");
+    [
+      ["Dataset id", row.dataset_id],
+      ["Geography", row.geography],
+      ["Access", row.access],
+      ["Auth required", row.auth_required],
+      ["License", row.license],
+      ["Formats", row.formats],
+      ["Update frequency", row.update_frequency]
+    ].forEach(function (pair) {
+      list.appendChild(field(pair[0], el("dd", null, pair[1] || "—")));
+    });
+
+    var anchor = el("a", null, row.url);
+    anchor.href = row.url;
+    anchor.rel = "noopener noreferrer";
+    anchor.target = "_blank";
+    var linkCell = el("dd");
+    linkCell.appendChild(anchor);
+    list.appendChild(field("Link", linkCell));
+
+    if (row.download_url) {
+      list.appendChild(field("Fetch endpoint", el("dd", null, row.download_url)));
+    }
+    body.appendChild(list);
+
+    if (row.notes) body.appendChild(el("p", "note", row.notes));
+    card.appendChild(body);
+    return card;
+  }
+
+  function renderCards(rows) {
+    var host = document.getElementById("cards");
+    host.textContent = "";
+    if (!rows.length) {
+      host.appendChild(el("p", "empty", "No dataset matches those filters."));
+      return;
+    }
+    rows.forEach(function (row) { host.appendChild(buildCard(row)); });
+  }
+
+  function renderTable(rows) {
+    var head = document.getElementById("thead-row");
+    var body = document.getElementById("tbody");
+    head.textContent = "";
+    body.textContent = "";
+    DATA.columns.forEach(function (column) {
+      head.appendChild(el("th", null, column.replace(/_/g, " ")));
+    });
+    rows.forEach(function (row) {
+      var tr = document.createElement("tr");
+      DATA.columns.forEach(function (column) {
+        var value = row[column];
+        if (typeof value === "boolean") value = value ? "true" : "false";
+        var numeric = /^(coverage_|dataset_id|fetchable|auth_required)/.test(column);
+        tr.appendChild(el("td", numeric ? "mono" : null, value === "" ? "—" : String(value)));
+      });
+      body.appendChild(tr);
+    });
+  }
+
+  function renderGap() {
+    var host = document.getElementById("gap-figure");
+    host.textContent = "";
+    var max = Math.max.apply(null, DATA.reference.map(function (r) { return r.deaths; }));
+    DATA.reference.forEach(function (row) {
+      var line = el("div", "gap-row");
+      line.style.setProperty("--hue",
+        row.figure_type === "official_report" ? "var(--muted)" : "var(--road)");
+
+      var name = el("div", "gap-name", row.source);
+      name.appendChild(el("small", null, row.year + " · " + row.figure_type.replace(/_/g, " ")));
+      line.appendChild(name);
+
+      var bar = el("div", "gap-bar");
+      var fill = el("div", "gap-fill");
+      fill.style.width = (row.deaths / max) * 100 + "%";
+      bar.appendChild(fill);
+      bar.appendChild(el("span", "gap-value",
+        (row.is_approximate ? "~" : "") + row.deaths.toLocaleString() + " deaths"));
+      line.appendChild(bar);
+      host.appendChild(line);
+    });
+  }
+
+  function bytes(text) {
+    var size = new Blob([text]).size;
+    return size < 1024 ? size + " B" : (size / 1024).toFixed(1) + " KB";
+  }
+
+  function renderFiles() {
+    var host = document.getElementById("files");
+    host.textContent = "";
+    DATA.files.forEach(function (file) {
+      var card = el("div", "file");
+      card.appendChild(el("div", "file-name", file.name));
+      card.appendChild(el("div", "file-meta", file.description));
+      card.appendChild(el("div", "file-meta", bytes(file.content) + " · " + file.rows + " rows"));
+
+      var actions = el("div", "file-actions");
+      var link = el("a", "btn", "Download");
+      link.href = URL.createObjectURL(new Blob([file.content], { type: file.mime }));
+      link.download = file.name;
+      actions.appendChild(link);
+
+      var copy = el("button", "btn ghost", "Copy");
+      copy.type = "button";
+      copy.addEventListener("click", function () {
+        navigator.clipboard.writeText(file.content).then(function () {
+          copy.textContent = "Copied";
+          setTimeout(function () { copy.textContent = "Copy"; }, 1600);
+        }, function () {
+          copy.textContent = "Press ⌘C";
+        });
+      });
+      actions.appendChild(copy);
+      card.appendChild(actions);
+      host.appendChild(card);
+    });
+  }
+
+  function render() {
+    var rows = DATA.catalog.filter(matches);
+    renderDomains();
+    document.getElementById("count-line").textContent =
+      "Showing " + rows.length + " of " + DATA.catalog.length + " sources" +
+      (state.domain ? " · " + state.domain.replace(/_/g, " ") : "") +
+      (state.access !== "all" ? " · " + state.access : "");
+
+    var tableMode = state.view === "table";
+    document.getElementById("span-legend").hidden = tableMode;
+    document.getElementById("cards").hidden = tableMode;
+    document.getElementById("table-wrap").hidden = !tableMode;
+    if (tableMode) renderTable(rows); else renderCards(rows);
+  }
+
+  function wireSegments() {
+    document.querySelectorAll("[data-access]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        state.access = button.dataset.access;
+        document.querySelectorAll("[data-access]").forEach(function (other) {
+          other.setAttribute("aria-pressed", String(other === button));
+        });
+        render();
+      });
+    });
+    document.querySelectorAll("[data-view]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        state.view = button.dataset.view;
+        document.querySelectorAll("[data-view]").forEach(function (other) {
+          other.setAttribute("aria-pressed", String(other === button));
+        });
+        render();
+      });
+    });
+    document.getElementById("search").addEventListener("input", function (event) {
+      state.query = event.target.value.trim().toLowerCase();
+      render();
+    });
+  }
+
+  function init() {
+    var years = DATA.catalog
+      .map(function (r) { return parseInt(r.coverage_start, 10); })
+      .filter(function (y) { return !isNaN(y); });
+    document.getElementById("stat-total").textContent = DATA.catalog.length;
+    document.getElementById("stat-auto").textContent =
+      DATA.catalog.filter(function (r) { return r.fetchable; }).length;
+    document.getElementById("stat-earliest").textContent = Math.min.apply(null, years);
+    document.getElementById("span-legend").textContent =
+      "coverage bars span " + TIMELINE_START + "–" + TIMELINE_END;
+    document.getElementById("download-note").textContent = DATA.download_note;
+    document.getElementById("footer-note").textContent = DATA.footer_note;
+    renderGap();
+    renderFiles();
+    wireSegments();
+    render();
+  }
+
+  init();
+</script>
