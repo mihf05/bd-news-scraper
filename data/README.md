@@ -11,11 +11,12 @@ Source catalog and reference figures for the four app ideas in
 | `sources/datasets.json` | Same catalog as JSON records |
 | `reference/bd_road_death_estimates.csv` | WHO estimate vs official Bangladesh road deaths (2021) |
 | `reference/bd_road_death_estimates.json` | Same, as JSON |
+| `index.html` | Browsable page: filter the catalog, read every field, download the files |
 | `raw/` | Where `fetch` writes downloaded datasets (git-ignored) |
 
 The catalog lives in `scripts/data_sources.py` as the single source of truth;
-both files are generated from it, so edit the script and re-export rather than
-editing the CSV or JSON by hand.
+the CSV, the JSON and the page are all generated from it, so edit the script and
+re-run the commands rather than editing the outputs by hand.
 
 ## Catalog columns
 
@@ -38,6 +39,9 @@ the landing page the first time you download - several are marked
 # Regenerate the catalog files after editing scripts/data_sources.py
 python scripts/data_sources.py export
 
+# Rebuild the browsable page (open data/index.html in a browser afterwards)
+python scripts/data_sources.py page
+
 # See what would be downloaded
 python scripts/data_sources.py fetch --dry-run
 
@@ -50,6 +54,15 @@ python scripts/data_sources.py fetch --idea air_quality
 JSON responses are saved as `.json` and flattened to `.csv` when the payload is
 a list of records; other responses are saved verbatim. Failures are reported per
 source and do not stop the run.
+
+## The page
+
+`data/index.html` is standalone - no server, no network, no build step. Open it
+from disk and you get the four domains with their auto-fetch ratios, search and
+access filters, a card per dataset with every catalog field and a coverage bar on
+a shared 1979-present timeline, a full-table view of all 17 columns, and Download
+buttons that save the CSV and JSON straight from the page. Rebuild it whenever the
+catalog changes; `scripts/page_template.html` holds the markup and styling.
 
 ## Note on the committed data
 
