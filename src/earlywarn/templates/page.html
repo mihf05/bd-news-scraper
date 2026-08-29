@@ -632,12 +632,23 @@
 <script>
   /*__DATA__*/
 
-  var DOMAINS = [
-    { id: "dengue", label: "Dengue", hue: "var(--dengue)", note: "Outbreak hotspots by area" },
-    { id: "flood", label: "Flood", hue: "var(--flood)", note: "River levels, 7-day forecasts" },
-    { id: "road_safety", label: "Road safety", hue: "var(--road)", note: "Accident black spots" },
-    { id: "air_quality", label: "Air quality", hue: "var(--air)", note: "Pollution spikes by group" }
-  ];
+  // Which ideas exist comes from the catalog; only the hue is presentational,
+  // so an idea added in Python shows up here with the accent colour.
+  var HUES = {
+    dengue: "var(--dengue)",
+    flood: "var(--flood)",
+    road_safety: "var(--road)",
+    air_quality: "var(--air)"
+  };
+
+  var DOMAINS = DATA.ideas.map(function (idea) {
+    return {
+      id: idea.id,
+      label: idea.label,
+      note: idea.note,
+      hue: HUES[idea.id] || "var(--accent)"
+    };
+  });
 
   var TIMELINE_END = new Date().getFullYear();
   var TIMELINE_START = Math.min.apply(null, DATA.catalog

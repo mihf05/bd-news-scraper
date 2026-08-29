@@ -1,74 +1,39 @@
-"""Catalog of open data sources for the Bangladesh life-saving app ideas.
+"""The catalog itself - the single source of truth for every output.
 
-The catalog below is the single source of truth. It can be exported to CSV and
-JSON (``export``) and the openly downloadable entries can be fetched to disk
-(``fetch``).
+To add or change a source, edit :data:`CATALOG` below and re-run::
 
-Usage:
-    python scripts/data_sources.py export
-    python scripts/data_sources.py page
-    python scripts/data_sources.py fetch [--idea dengue] [--dry-run]
+    earlywarn export
+    earlywarn page
+
+`earlywarn validate` checks the catalog for the mistakes that matter: duplicate
+ids, empty required fields, an unknown idea, or a source marked fetchable
+without a download URL.
 """
 
-import argparse
-import csv
-import json
-import sys
-from dataclasses import asdict, dataclass, field, fields
-from pathlib import Path
+from earlywarn.models import DataSource
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
-SOURCES_DIR = DATA_DIR / "sources"
-RAW_DIR = DATA_DIR / "raw"
-REFERENCE_DIR = DATA_DIR / "reference"
-TEMPLATE_PATH = Path(__file__).resolve().parent / "page_template.html"
-PAGE_PATH = DATA_DIR / "index.html"
+#: Application areas, in the order they appear in the outputs. The keys are the
+#: values `DataSource.idea` may take; the values are the labels shown to people.
+IDEAS: dict[str, str] = {
+    "dengue": "Dengue",
+    "flood": "Flood",
+    "road_safety": "Road safety",
+    "air_quality": "Air quality",
+}
 
-REQUEST_TIMEOUT = 60
-USER_AGENT = "bd-news-scraper-datasources/1.0"
+#: One-line description of what each application would do with its sources.
+IDEA_SUMMARIES: dict[str, str] = {
+    "dengue": "Outbreak hotspots by area",
+    "flood": "River levels, 7-day forecasts",
+    "road_safety": "Accident black spots",
+    "air_quality": "Pollution spikes by group",
+}
 
-
-@dataclass
-class DataSource:
-    """A single dataset that can feed one of the app ideas.
-
-    Attributes:
-        idea: Which app idea the dataset serves.
-        dataset_id: Stable slug used for filenames.
-        dataset_name: Human readable dataset name.
-        provider: Organisation publishing the data.
-        url: Landing page or API root.
-        data_type: What the dataset actually contains.
-        geography: Geographic coverage.
-        coverage_start: First year covered ("" if not applicable).
-        coverage_end: Last year covered, or "ongoing".
-        update_frequency: How often new data lands.
-        formats: File/response formats offered.
-        access: How the data is obtained.
-        auth_required: Whether a key, login or approval is needed.
-        license: License as published (confirm on first download).
-        fetchable: Whether ``fetch`` can download it unattended.
-        download_url: Direct URL used by ``fetch`` ("" if none).
-        notes: Anything worth knowing before using it.
-    """
-
-    idea: str
-    dataset_id: str
-    dataset_name: str
-    provider: str
-    url: str
-    data_type: str
-    geography: str
-    coverage_start: str
-    coverage_end: str
-    update_frequency: str
-    formats: str
-    access: str
-    auth_required: str
-    license: str
-    fetchable: bool
-    download_url: str = ""
-    notes: str = ""
+REQUIRED_FIELDS = (
+    "dataset_id", "dataset_name", "provider", "url", "data_type",
+    "geography", "update_frequency", "formats", "access", "auth_required",
+    "license",
+)
 
 
 CATALOG: list[DataSource] = [
@@ -300,22 +265,23 @@ CATALOG: list[DataSource] = [
     ),
     DataSource(
         idea="road_safety",
-        dataset_id="prothom_alo_scrape",
-        dataset_name="Prothom Alo accident reporting (this repository)",
-        provider="Self-collected via src/scraper.py",
-        url="https://github.com/mihf05/bd-news-scraper",
-        data_type="News articles with headline, content, tags, sections and timestamps",
+        dataset_id="newspaper_archives",
+        dataset_name="Bangladeshi newspaper accident reporting",
+        provider="National dailies (Prothom Alo, The Daily Star and others)",
+        url="https://www.prothomalo.com/",
+        data_type="News articles reporting individual crashes, with date and location text",
         geography="Bangladesh",
-        coverage_start="2010",
+        coverage_start="",
         coverage_end="ongoing",
-        update_frequency="Incremental, on each run",
-        formats="CSV (yearly files)",
-        access="Run the scraper in this repo",
+        update_frequency="Continuous",
+        formats="HTML, site JSON APIs",
+        access="Collect yourself with a scraper; no bulk export is published",
         auth_required="no",
-        license="Educational/research use - see repository disclaimer",
+        license="Each publisher's terms of service - check robots.txt before collecting",
         fetchable=False,
-        notes="Continuous media-sourced stream. Filter on accident keywords to "
-              "extend the newspaper-derived datasets past 2019.",
+        notes="The only continuously updating road-safety source. Extract accident "
+              "reports and geocode the location text to extend the newspaper-derived "
+              "datasets past 2019, and to cross-check official counts.",
     ),
 
     # ------------------------------------------------------------- air quality
@@ -413,296 +379,78 @@ CATALOG: list[DataSource] = [
     ),
 ]
 
-COLUMN_NAMES: list[str] = [f.name for f in fields(DataSource)]
+
+def ideas() -> list[str]:
+    """List the application areas the catalog covers.
+
+    Returns:
+        list[str]: Idea keys, in catalog order.
+    """
+    return list(IDEAS)
 
 
-def export_catalog(output_dir: Path = SOURCES_DIR) -> tuple[Path, Path]:
-    """Write the catalog to CSV and JSON.
+def by_idea(idea: str | None = None) -> list[DataSource]:
+    """Select the sources for one idea.
 
     Args:
-        output_dir: Directory the two files are written to.
+        idea: Idea key, or None for the whole catalog.
 
     Returns:
-        tuple[Path, Path]: Paths of the written CSV and JSON files.
+        list[DataSource]: Matching sources, in catalog order.
     """
-    output_dir.mkdir(parents=True, exist_ok=True)
-    csv_path = output_dir / "datasets.csv"
-    json_path = output_dir / "datasets.json"
-
-    rows = [asdict(source) for source in CATALOG]
-
-    with open(csv_path, "w", newline="", encoding="utf-8") as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=COLUMN_NAMES)
-        writer.writeheader()
-        writer.writerows(rows)
-
-    with open(json_path, "w", encoding="utf-8") as jsonfile:
-        json.dump(rows, jsonfile, indent=2, ensure_ascii=False)
-        jsonfile.write("\n")
-
-    return csv_path, json_path
+    if idea is None:
+        return list(CATALOG)
+    return [source for source in CATALOG if source.idea == idea]
 
 
-DOWNLOAD_NOTE = (
-    "Download saves the file straight from this page - no request goes anywhere. "
-    "If a preview host blocks the save, Copy puts the same text on your clipboard."
-)
-
-FOOTER_NOTE = (
-    "Generated from scripts/data_sources.py. Licenses and URLs are recorded as published "
-    "by each provider - confirm them on the landing page the first time you download. "
-    "No datasets are embedded here; run the fetcher to populate data/raw/."
-)
-
-
-def count_rows(text: str, is_json: bool) -> int:
-    """Count the records in a serialised file.
+def get(dataset_id: str) -> DataSource:
+    """Look up one source by its id.
 
     Args:
-        text: File contents.
-        is_json: Whether the contents are JSON.
+        dataset_id: The source's stable slug.
 
     Returns:
-        int: Number of records.
-    """
-    if is_json:
-        return len(json.loads(text))
-    return max(0, len([line for line in text.splitlines() if line.strip()]) - 1)
-
-
-def collect_files() -> list[dict]:
-    """Read the generated data files so the page can serve them for download.
-
-    Returns:
-        list[dict]: One entry per downloadable file.
-    """
-    wanted = [
-        (SOURCES_DIR / "datasets.csv", "The full catalog, one row per dataset."),
-        (SOURCES_DIR / "datasets.json", "The same catalog as JSON records."),
-        (REFERENCE_DIR / "bd_road_death_estimates.csv",
-         "WHO estimate against official Bangladesh road deaths, 2021."),
-        (REFERENCE_DIR / "bd_road_death_estimates.json",
-         "The same reference figures as JSON records."),
-    ]
-
-    files = []
-    for path, description in wanted:
-        if not path.exists():
-            continue
-        # Decode the bytes rather than read_text so CRLF line endings survive and
-        # the download is byte-identical to the file in the repository.
-        content = path.read_bytes().decode("utf-8")
-        is_json = path.suffix == ".json"
-        files.append({
-            "name": path.name,
-            "description": description,
-            "content": content,
-            "mime": "application/json" if is_json else "text/csv",
-            "rows": count_rows(content, is_json),
-        })
-    return files
-
-
-def build_page(artifact_path: Path | None = None) -> Path:
-    """Render the catalog browser page from the template.
-
-    Writes a standalone page to ``data/index.html``. When ``artifact_path`` is
-    given, the same page is also written without the document skeleton, which is
-    the form the Artifact publisher expects.
-
-    Args:
-        artifact_path: Optional path for the skeleton-free copy.
-
-    Returns:
-        Path: Path of the standalone page.
+        DataSource: The matching source.
 
     Raises:
-        ValueError: If the template is missing its body or data markers.
+        KeyError: If no source has that id.
     """
-    template = TEMPLATE_PATH.read_text(encoding="utf-8")
-    if "<!--BODY-->" not in template or "/*__DATA__*/" not in template:
-        raise ValueError("page_template.html is missing its BODY or DATA marker")
-
-    reference_path = REFERENCE_DIR / "bd_road_death_estimates.json"
-    reference = json.loads(reference_path.read_text(encoding="utf-8")) if reference_path.exists() else []
-
-    payload = {
-        "columns": COLUMN_NAMES,
-        "catalog": [asdict(source) for source in CATALOG],
-        "reference": reference,
-        "files": collect_files(),
-        "download_note": DOWNLOAD_NOTE,
-        "footer_note": FOOTER_NOTE,
-    }
-    serialised = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
-    template = template.replace("/*__DATA__*/", f"var DATA = {serialised};")
-
-    head, body = template.split("<!--BODY-->", 1)
-    head, body = head.strip(), body.strip()
-
-    PAGE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    PAGE_PATH.write_text(
-        "<!doctype html>\n<html lang=\"en\">\n<head>\n"
-        "<meta charset=\"utf-8\">\n"
-        "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
-        f"{head}\n</head>\n<body>\n{body}\n</body>\n</html>\n",
-        encoding="utf-8",
-    )
-
-    if artifact_path is not None:
-        artifact_path.parent.mkdir(parents=True, exist_ok=True)
-        artifact_path.write_text(f"{head}\n{body}\n", encoding="utf-8")
-
-    return PAGE_PATH
+    for source in CATALOG:
+        if source.dataset_id == dataset_id:
+            return source
+    raise KeyError(dataset_id)
 
 
-def build_headers(source: DataSource) -> dict[str, str]:
-    """Build request headers, injecting API keys from the environment.
-
-    Args:
-        source: Data source about to be requested.
+def validate() -> list[str]:
+    """Check the catalog for structural mistakes.
 
     Returns:
-        dict[str, str]: Headers for the request.
+        list[str]: One message per problem found; empty when the catalog is
+        sound.
     """
-    import os
+    problems: list[str] = []
+    seen: set[str] = set()
 
-    headers = {"User-Agent": USER_AGENT}
-    if source.dataset_id == "openaq":
-        key = os.environ.get("OPENAQ_API_KEY")
-        if key:
-            headers["X-API-Key"] = key
-    return headers
+    for source in CATALOG:
+        if source.dataset_id in seen:
+            problems.append(f"{source.dataset_id}: duplicate dataset_id")
+        seen.add(source.dataset_id)
 
+        if source.idea not in IDEAS:
+            problems.append(f"{source.dataset_id}: unknown idea {source.idea!r}")
 
-def build_url(source: DataSource) -> str:
-    """Return the download URL with any required token appended.
+        for name in REQUIRED_FIELDS:
+            if not getattr(source, name).strip():
+                problems.append(f"{source.dataset_id}: {name} is empty")
 
-    Args:
-        source: Data source about to be requested.
+        if source.fetchable and not source.download_url:
+            problems.append(f"{source.dataset_id}: fetchable but has no download_url")
 
-    Returns:
-        str: URL to request.
-    """
-    import os
+        if not source.url.startswith(("http://", "https://")):
+            problems.append(f"{source.dataset_id}: url is not an http(s) URL")
 
-    if source.dataset_id == "waqi":
-        token = os.environ.get("WAQI_TOKEN", "")
-        return f"{source.download_url}?token={token}"
-    return source.download_url
+    for idea in IDEAS:
+        if not by_idea(idea):
+            problems.append(f"{idea}: idea has no sources")
 
-
-def fetch_source(source: DataSource, output_dir: Path = RAW_DIR) -> Path:
-    """Download one source and save it to disk.
-
-    JSON responses are saved as ``.json`` and also flattened to ``.csv`` when
-    the payload is a list of records. Anything else is saved verbatim.
-
-    Args:
-        source: Data source to download.
-        output_dir: Directory raw downloads are written to.
-
-    Returns:
-        Path: Path of the primary saved file.
-
-    Raises:
-        requests.HTTPError: If the request fails.
-    """
-    import requests
-
-    output_dir.mkdir(parents=True, exist_ok=True)
-    response = requests.get(
-        build_url(source),
-        headers=build_headers(source),
-        timeout=REQUEST_TIMEOUT,
-    )
-    response.raise_for_status()
-
-    content_type = response.headers.get("Content-Type", "")
-    if "json" in content_type:
-        payload = response.json()
-        json_path = output_dir / f"{source.dataset_id}.json"
-        with open(json_path, "w", encoding="utf-8") as jsonfile:
-            json.dump(payload, jsonfile, indent=2, ensure_ascii=False)
-            jsonfile.write("\n")
-
-        records = payload.get("results") if isinstance(payload, dict) else payload
-        if isinstance(records, list) and records and isinstance(records[0], dict):
-            csv_path = output_dir / f"{source.dataset_id}.csv"
-            keys = list(records[0].keys())
-            with open(csv_path, "w", newline="", encoding="utf-8") as csvfile:
-                writer = csv.DictWriter(csvfile, fieldnames=keys, extrasaction="ignore")
-                writer.writeheader()
-                for record in records:
-                    writer.writerow({k: json.dumps(v) if isinstance(v, (dict, list)) else v
-                                     for k, v in record.items()})
-        return json_path
-
-    raw_path = output_dir / f"{source.dataset_id}.csv"
-    raw_path.write_bytes(response.content)
-    return raw_path
-
-
-def fetch_catalog(idea: str | None = None, dry_run: bool = False) -> int:
-    """Fetch every openly downloadable source, optionally filtered by idea.
-
-    Args:
-        idea: Only fetch sources for this idea, or None for all.
-        dry_run: List what would be fetched without downloading.
-
-    Returns:
-        int: Number of sources successfully downloaded.
-    """
-    selected = [s for s in CATALOG if s.fetchable and (idea is None or s.idea == idea)]
-    skipped = [s for s in CATALOG if not s.fetchable and (idea is None or s.idea == idea)]
-
-    downloaded = 0
-    for source in selected:
-        if dry_run:
-            print(f"would fetch {source.dataset_id:<32} {build_url(source)}")
-            continue
-        try:
-            path = fetch_source(source)
-            print(f"fetched  {source.dataset_id:<32} -> {path}")
-            downloaded += 1
-        except Exception as error:  # noqa: BLE001 - report and continue
-            print(f"FAILED   {source.dataset_id:<32} {error}", file=sys.stderr)
-
-    for source in skipped:
-        print(f"skipped  {source.dataset_id:<32} manual step: {source.access}")
-
-    return downloaded
-
-
-def main() -> None:
-    """Command line entry point."""
-    parser = argparse.ArgumentParser(description=__doc__)
-    subparsers = parser.add_subparsers(dest="command", required=True)
-
-    subparsers.add_parser("export", help="Write the catalog to CSV and JSON")
-
-    page_parser = subparsers.add_parser("page", help="Render the catalog browser page")
-    page_parser.add_argument("--artifact", type=Path,
-                             help="Also write a copy without the document skeleton")
-
-    fetch_parser = subparsers.add_parser("fetch", help="Download the open sources")
-    fetch_parser.add_argument("--idea", choices=sorted({s.idea for s in CATALOG}))
-    fetch_parser.add_argument("--dry-run", action="store_true")
-
-    args = parser.parse_args()
-
-    if args.command == "export":
-        csv_path, json_path = export_catalog()
-        print(f"wrote {csv_path}")
-        print(f"wrote {json_path}")
-    elif args.command == "page":
-        page_path = build_page(artifact_path=args.artifact)
-        print(f"wrote {page_path}")
-        if args.artifact:
-            print(f"wrote {args.artifact}")
-    else:
-        fetch_catalog(idea=args.idea, dry_run=args.dry_run)
-
-
-if __name__ == "__main__":
-    main()
+    return problems

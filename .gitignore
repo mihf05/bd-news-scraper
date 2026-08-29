@@ -1,7 +1,10 @@
 **/venv
-**/output
 **/__pycache__
-**/logs
+**/*.egg-info
+.pytest_cache/
+build/
+dist/
+
 # Raw dataset downloads (fetched locally, not committed)
 data/raw/*
 !data/raw/.gitkeep
