@@ -1,0 +1,3 @@
+year,figure_type,deaths,is_approximate,source,source_type,note
+2021,modelled_estimate,32000,true,WHO Global Status Report on Road Safety,international,"WHO modelled estimate of annual road traffic deaths in Bangladesh"
+2021,official_report,11000,true,Government of Bangladesh reported figures,national,"Officially reported road traffic deaths for the same year"

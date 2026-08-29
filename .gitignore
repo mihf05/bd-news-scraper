@@ -2,3 +2,6 @@
 **/output
 **/__pycache__
 **/logs
+# Raw dataset downloads (fetched locally, not committed)
+data/raw/*
+!data/raw/.gitkeep
