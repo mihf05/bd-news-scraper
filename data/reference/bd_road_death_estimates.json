@@ -1,0 +1,20 @@
+[
+  {
+    "year": 2021,
+    "figure_type": "modelled_estimate",
+    "deaths": 32000,
+    "is_approximate": true,
+    "source": "WHO Global Status Report on Road Safety",
+    "source_type": "international",
+    "note": "WHO modelled estimate of annual road traffic deaths in Bangladesh"
+  },
+  {
+    "year": 2021,
+    "figure_type": "official_report",
+    "deaths": 11000,
+    "is_approximate": true,
+    "source": "Government of Bangladesh reported figures",
+    "source_type": "national",
+    "note": "Officially reported road traffic deaths for the same year"
+  }
+]
