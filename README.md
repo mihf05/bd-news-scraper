@@ -1,211 +1,162 @@
-# BD news Scraper
+# Early-Warning Data Catalog
 
-A Python-based web scraper. This tool efficiently downloads, processes, and stores news articles in CSV format with comprehensive metadata.
+A curated, machine-readable catalog of **18 open data sources** for building
+early-warning applications in Bangladesh: dengue outbreaks, river flooding, road
+accident black spots and air quality.
 
-## ✨ Features
+Finding the data is most of the work. For each source the catalog records what it
+covers, how far back, what format it comes in, what it costs you to get it (open
+download, free key, application, login, or a parser you have to write) and how
+its license is published. One command downloads the sources that can be
+downloaded; the rest are listed with the manual step named.
 
-- 🔄 Incremental scraping with automatic progress tracking
-- 📊 Exports data to yearly CSV files with 20+ metadata fields
-- 🔍 Smart filtering and data validation
-- 📝 Comprehensive logging system
-- ⚙️ Configurable date ranges and request parameters
-- 🛡️ Robust error handling and retry mechanisms
-- 💾 Efficient memory usage with modern Python dataclasses
-- 🗂️ Companion data source catalog with CSV, JSON and a browsable HTML page
+The catalog is defined once in Python and rendered to CSV, JSON and a standalone
+HTML page, so the three can never disagree.
 
-## 📋 Requirements
+## Install
 
-- **Python 3.10+** (uses modern type hints and language features)
-- See [requirements.txt](requirements.txt) for package dependencies
+Python 3.10 or newer.
 
-## 🚀 Setup
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/mihf05/bd-news-scraper.git
-   cd prothom-alo-scraper
-   ```
-
-2. **Create and activate a virtual environment**
-   ```bash
-   python -m venv venv
-   
-   # On Windows
-   venv\Scripts\activate
-   
-   # On macOS/Linux
-   source venv/bin/activate
-   ```
-
-3. **Install dependencies**
-   ```bash
-   pip install --upgrade pip
-   pip install -r requirements.txt
-   ```
-
-4. **Configure settings**
-   
-   Edit `config.json` to customize scraping parameters:
-   - `start_date`: Starting date for scraping (DD-MM-YYYY)
-   - `output_directory`: Where to save CSV files
-   - `log_directory`: Where to save log files
-   - `threshold`: Number of days to scrape per batch
-   - `limit`: Articles per API request
-   - `max_attempts`: Maximum retry attempts for failed requests
-
-## 📖 Usage
-
-Run the scraper:
 ```bash
-python src/scraper.py
+git clone https://github.com/mihf05/bd-news-scraper.git
+cd bd-news-scraper
+python -m venv venv && source venv/bin/activate   # Windows: venv\Scripts\activate
+pip install -e .
 ```
 
-The scraper will:
-1. Load configuration from `config.json`
-2. Resume from the last scraped date
-3. Fetch articles in batches
-4. Process and validate data
-5. Save to yearly CSV files (e.g., `2024.csv`)
-6. Update progress in `config.json`
-7. Generate detailed logs
+That puts the `earlywarn` command on your path. Without installing, every
+command also works as `python -m earlywarn ...` with `src/` on `PYTHONPATH`.
 
-## 🗂️ Data Source Catalog
+## Use it
 
-Alongside the scraper, `scripts/data_sources.py` maintains a catalog of 18 open
-data sources for early-warning apps in Bangladesh — dengue, flood, road safety
-and air quality. The catalog is defined once in that script and exported to CSV,
-JSON and a browsable HTML page, so the three can't drift apart.
-
-### View the catalog
+### Browse the catalog in your terminal
 
 ```bash
-python scripts/data_sources.py page
+earlywarn list                      # all 18 sources
+earlywarn list --idea flood         # one application area
+earlywarn list --access auto        # only what downloads unattended
 ```
 
-Then open `data/index.html` in a browser. It is standalone — no server, no
-network, no build step. Search and filter the sources, switch between card and
-full-table views, and download the CSV or JSON straight from the page.
+```
+opendengue  auto    1990-ongoing    OpenDengue global dengue database
+openaq      auto    2013-ongoing    OpenAQ measurements API
+waqi        auto    ?-ongoing       World Air Quality Index (aqicn) feed
 
-### Regenerate the CSV and JSON
-
-```bash
-python scripts/data_sources.py export
+3 of 18 sources (3 auto)
 ```
 
-Writes `data/sources/datasets.csv` and `data/sources/datasets.json`. Run this
-after editing the `CATALOG` list in `scripts/data_sources.py`, then re-run
-`page` so the HTML picks up the change.
-
-### Download the datasets themselves
+### Browse it in a browser
 
 ```bash
-# See what would be downloaded, without fetching
-python scripts/data_sources.py fetch --dry-run
+earlywarn page
+python -m webbrowser data/index.html
+```
 
-# Free keys: OpenAQ Explorer, and aqicn.org/data-platform/token
-export OPENAQ_API_KEY=your_key
-export WAQI_TOKEN=your_token
+`data/index.html` is standalone — no server, no network, no build step. Search
+and filter the sources, switch between cards and a full table of all 17 columns,
+and download the CSV or JSON straight from the page. It follows your system's
+light or dark theme.
 
-# Fetch everything, or one idea at a time
-python scripts/data_sources.py fetch
-python scripts/data_sources.py fetch --idea air_quality
+### Download the datasets
+
+```bash
+earlywarn fetch --dry-run           # what would be downloaded, without downloading
+
+export OPENAQ_API_KEY=your_key      # free: OpenAQ Explorer
+export WAQI_TOKEN=your_token        # free: aqicn.org/data-platform/token
+
+earlywarn fetch                     # everything that can be fetched
+earlywarn fetch --idea air_quality  # one application area
 ```
 
 Downloads land in `data/raw/`, which is git-ignored. JSON responses are saved as
 `.json` and flattened to `.csv` when the payload is a list of records; anything
-else is saved verbatim. Failures are reported per source and don't stop the run.
+else is saved verbatim. One source failing never stops the run.
 
-Sources needing a manual step first — an approved API key, a free account, a
-login, or an HTML/PDF parser — are listed as skipped with the step named. See
-[data/README.md](data/README.md) for the full column reference.
-
-## 📁 Project Structure
+Sources that need a manual step first are reported as skipped with the step
+named:
 
 ```
-bd-news-scraper/
-├── src/
-│   ├── config.py               # Configuration management
-│   ├── models.py               # Data models (ItemModel, ItemsModel)
-│   ├── processor.py            # Data processing and cleaning
-│   ├── requester.py            # API requests with retry logic
-│   ├── saver.py                # CSV file operations
-│   ├── scraper.py              # Main scraper orchestration
-│   └── utils.py                # Utility functions
-├── scripts/
-│   ├── data_sources.py         # Data source catalog: export, page, fetch
-│   └── page_template.html      # Markup and styling for the catalog page
+skipped  google_flood_forecasting_api  manual step: Free, but pilot access is applied for and approved by email
+```
+
+### Regenerate the exports
+
+```bash
+earlywarn export                    # data/sources/datasets.{csv,json}
+earlywarn validate                  # check the catalog is well formed
+```
+
+## What's in the catalog
+
+| Application | Sources | Download unattended | Notable |
+|-------------|---------|---------------------|---------|
+| Dengue | 3 | 1 | OpenDengue (case counts since 1990, 102 countries), HealthMap, DGHS daily press releases |
+| Flood | 6 | 0 | Google Flood Hub + Flood Forecasting API, Inundation History, GRRR, FFWC gauges, GloFAS |
+| Road safety | 4 | 0 | figshare 2025 multi-agency dataset (2007–2024), IEEE DataPort, WHO estimates |
+| Air quality | 5 | 2 | OpenAQ, WAQI/aqicn, IQAir, CAMS, DoE CASE |
+
+Each column of the catalog is documented in [data/README.md](data/README.md).
+
+**Why two sources per application.** Official national figures undercount. For
+2021 the WHO estimated roughly 32,000 road deaths in Bangladesh against roughly
+11,000 in official figures — close to a 3× gap, recorded in
+`data/reference/bd_road_death_estimates.csv`. Every application area therefore
+pairs a national source with an independent or international one, so a model can
+be calibrated against the discrepancy instead of inheriting it.
+
+## Project structure
+
+```
+early-warning-data-catalog/
+├── src/earlywarn/
+│   ├── catalog.py            # THE CATALOG — the single source of truth
+│   ├── models.py             # DataSource dataclass
+│   ├── export.py             # CSV and JSON output
+│   ├── page.py               # HTML page renderer
+│   ├── fetch.py              # downloader for the open sources
+│   ├── cli.py                # the earlywarn command
+│   ├── paths.py              # where generated files live
+│   └── templates/page.html   # markup and styling for the page
 ├── data/
-│   ├── index.html              # Browsable catalog page (generated)
-│   ├── sources/                # datasets.csv and datasets.json (generated)
-│   ├── reference/              # Reference figures used for calibration
-│   └── raw/                    # Downloaded datasets (git-ignored)
+│   ├── index.html            # generated page
+│   ├── sources/              # generated datasets.csv and datasets.json
+│   ├── reference/            # reference figures used for calibration
+│   └── raw/                  # downloads (git-ignored)
 ├── docs/
-│   └── app-ideas.md            # App ideas the catalog was assembled for
-├── config.json                 # Configuration file
-├── requirements.txt            # Python dependencies
-└── README.md                   # This file
+│   ├── app-ideas.md          # the applications the catalog was assembled for
+│   └── adding-a-source.md    # how to extend the catalog
+├── tests/                    # pytest suite, no network required
+└── pyproject.toml
 ```
 
-## 📊 Output Format
+## Contributing
 
-Articles are saved with the following fields:
+Adding a source is a single dataclass entry — see
+[docs/adding-a-source.md](docs/adding-a-source.md).
 
-| Field | Description |
-|-------|-------------|
-| `text_id` | Unique article identifier |
-| `text_headline` | Article headline |
-| `text_subheadline` | Article subheadline |
-| `text_summary` | Article summary |
-| `text_content` | Full article content (cleaned) |
-| `text_main_author` | Primary author name |
-| `text_authors` | All authors (comma-separated) |
-| `text_url` | Article URL |
-| `int_read_time` | Estimated read time (minutes) |
-| `text_seo_description` | SEO meta description |
-| `text_seo_tags` | SEO keywords |
-| `text_tags` | Article tags |
-| `text_sections` | Article sections/categories |
-| `int_word_count` | Word count |
-| `date_published` | Publication timestamp |
-| `date_first_published_at` | First publication timestamp |
-| `date_last_published_at` | Last publication timestamp |
-| `date_created_at` | Creation timestamp |
-| `date_updated_at` | Last update timestamp |
-| `date_content_updated_at` | Content update timestamp |
-
-
-## 🔧 Advanced Configuration
-
-### Example `config.json`:
-```json
-{
-  "start_date": {
-    "description": "Starting date for scraping",
-    "value": "01-01-2020"
-  },
-  "last_scraped_date": {
-    "description": "Last successfully scraped date",
-    "value": null
-  },
-  "threshold": {
-    "description": "Days per batch",
-    "value": 1
-  },
-  "limit": {
-    "description": "Articles per request",
-    "value": 20
-  },
-  "max_attempts": {
-    "description": "Maximum retry attempts",
-    "value": 3
-  }
-}
+```bash
+pip install -e ".[dev]"
+pytest -q
 ```
 
-## 🤝 Contributing
+The suite runs offline and covers the catalog's integrity, both exports, the
+rendered page and every CLI command. One test re-exports the catalog and compares
+it byte for byte with the files in `data/`, so a change that forgets to
+regenerate them fails CI.
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+## Notes on the data
 
-## ⚠️ Disclaimer
+No datasets are committed to this repository — only the catalog describing them
+and the reference figures. Run `earlywarn fetch` to populate `data/raw/`.
 
-This scraper is for educational and research purposes only. Please respect Prothom Alo's terms of service and robots.txt when using this tool.
+Licenses and URLs are recorded as each provider publishes them, and several are
+marked "confirm on download". Confirm them on the landing page the first time you
+use a source, and respect each provider's terms.
+
+The two reference figures are cited estimates, flagged `is_approximate` with
+their source — they are not measurements collected here.
+
+## License
+
+MIT — see [LICENSE](LICENSE).

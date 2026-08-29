@@ -39,8 +39,8 @@ All four split the same way:
 
 ## Next step
 
-Point the scraper at health and disaster news specifically to validate demand
-before committing to one idea.
+Work the catalog: pull the sources for one idea, see what the data actually
+supports, and pick that idea before building anything.
 
 Open question: which direction — health, disaster/flood, or road safety?
 
@@ -48,8 +48,9 @@ Open question: which direction — health, disaster/flood, or road safety?
 
 Catalogued in [`data/sources/datasets.csv`](../data/sources/datasets.csv) and
 [`datasets.json`](../data/sources/datasets.json) — 18 sources across the four
-ideas, with coverage, format, access route and license for each. See
-[`data/README.md`](../data/README.md) for the columns and the fetcher.
+ideas, with coverage, format, access route and license for each. Browse them with
+`earlywarn page`; see [`data/README.md`](../data/README.md) for the columns and
+[`adding-a-source.md`](adding-a-source.md) to extend the catalog.
 
 Highlights per idea:
 
@@ -62,8 +63,8 @@ Highlights per idea:
   independent checks.
 - **Road safety** — the 2025 figshare dataset integrating ARI (BUET), BRTA, DMP
   and Military Police records with field data (2007–2024); the IEEE DataPort
-  newspaper-derived set (2016–2019); this scraper to extend the media angle past
-  2019.
+  newspaper-derived set (2016–2019); newspaper archives to extend the media angle
+  past 2019.
 - **Air quality** — OpenAQ REST API and WAQI/aqicn (free keys, fastest to stand
   up), IQAir for paid forecasts, CAMS and DoE CASE for cross-checks.
 
@@ -73,4 +74,4 @@ national source with an independent or international one.
 
 Lowest-friction prototype: **flood**. The forecasting work is already done and
 Bangladesh-proven (Google + IRC anticipatory cash-relief pilots), so the build is
-mostly the alert and distribution layer — the part that plays to my strength.
+mostly the alert and distribution layer.
